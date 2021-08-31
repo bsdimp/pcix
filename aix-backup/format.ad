@@ -1,0 +1,115 @@
+Reverse Engineering AIX Dump/Restore Format
+===========================================
+:Author:	Warner Losh
+:Email:		imp@bsdimp.com
+:Date:		September 1, 2021
+
+== Reverse Engineering AIX Dump/restore format
+
+This document describes the format used to distribute PC/IX floppies for the
+PC/IX 1.0 release.
+
+=== Background
+
+This section has background for why I'm doing this, how I'm doing things, etc.
+
+==== You're doing what?
+
+Recently, I've written a vm86-based program to execute Venix/86 (and maybe Venix/286) binaries.
+These a.out-formatted executables come in two flavor that are approximately the 'tiny' and 'small' memory models to use the older venacular.
+This got me thinking about the general problem of emulating old 8086 binaries using VM86.
+
+In the course of doing this, someone has asked me how I'd extend this to other older PC Unixes.
+I didn't have a good answer, so I thought I'd see if I could access PC/IX disks.
+There's a PC Emulator called pce that distributes several old OSes for 8088/8086 era machines, one of which is PC/IX 1.0.
+Looking at those disks, I see they are in AIX dump / restore format.
+Hence my desire to reverse engineer the format so I could extract the files more easily.
+Unlike the PDP-11 emulators, there's no good way to export a tree of files form this, so I thought I'd basically write `tar` for this format.
+There's likely some trick to this I've not encountered yet, but this was a fun project.
+
+==== Where to start?
+I opened all the PC/IX disks up in emacs to browse through them (doesn't everybody?).
+I was looking for PC/IX's u area to compare it with the V7 u-area and the Venix u-area (which were different from each other and from pc/ix).
+It turns out there's no separate u-area: It's been merged into the proc structure for each proc in the system.
+In the course of doing this, I discovered a file called 'dumprestor.h'.
+
+[source,C]
+----
+/*
+ * @(#)dumprestor.h	5.4 - 10/17/83
+ */
+----
+
+That has the basics of this format, but it wasn't enough for a quick program to extract.
+So I thought I'd walk through what I've learned.
+Some of it is trivial, other bits useful to understanding the format.
+
+==== Dump and restor?
+
+There were programs by that name on V7 unix, could this format just be that by another name?
+
+.Version 7 dumprestor.h
+[source,C]
+----
+#define NTREC   	20
+#define MLEN    	16
+#define MSIZ    	4096
+
+#define TS_TAPE 	1
+#define TS_INODE	2
+#define TS_BITS 	3
+#define TS_ADDR 	4
+#define TS_END  	5
+#define TS_CLRI 	6
+#define MAGIC   	(int)60011
+#define CHECKSUM	(int)84446
+struct	spcl
+{
+	int	c_type;
+	time_t	c_date;
+	time_t	c_ddate;
+	int	c_volume;
+	daddr_t	c_tapea;
+	ino_t	c_inumber;
+	int	c_magic;
+	int	c_checksum;
+	struct	dinode	c_dinode;
+	int	c_count;
+	char	c_addr[BSIZE];
+} spcl;
+----
+
+.PC/ix dumprestore.h
+[source,C]
+----
+...
+/* max number of blocks in a tape record */
+#ifdef  idea
+#define NTREC           (4096/BSIZE)    /* drive can't handle that much  */
+#else
+#define NTREC           (10240/BSIZE)   /* blocking factor - 10240 bytes */
+#endif
+/*
+ *      bitmap parameters.
+ *      note: 8K * 8 == 64K, largest possible inumber
+ */
+#define MLEN             8              /* number of bits per map word   */
+#define MSIZ            (8*1024)        /* number of words in map        */
+...
+#define MAGIC           (int)60011      /* magic number for headers      */
+#define CHECKSUM        (int)84446      /* checksum for all headers      */
+...
+union fs_rec {
+
+	/* common fields */
+	struct hdr h;
+
+	/* FS_VOLUME -- begins each volume */
+	struct fs_volume v;
+...
+};
+----
+
+So while they share similar bits, they are clearly going to be different.
+And experience bears this out.
+Though they have the same magic number, it's located at a different offset in the file so file(8) can tell the V7 dumps apart from the AIX dumps.
