@@ -152,6 +152,25 @@ So there's two types of dump. In fact, the diskettes seem to have both types, so
 
 However, key details like what happens at the end of each volumn, how do we map inodes to names, etc are missing.
 
+Let's look at the `FS_VOLUME` header and how it relates to multiple volumes.
+
+.FS_VOLUME record type
+[source,C]
+----
+	/* FS_VOLUME -- begins each volume */
+struct fs_volume {
+	struct  hdr h;
+	ushort  volnum;         /* volume number */
+	time_t  date;           /* current date */
+	time_t  ddate;          /* starting date */
+	daddr_t numwds;         /* number of wds this volume */
+	char    disk[SIZSTR];   /* name of disk */
+	char    fsname[SIZSTR]; /* name of file system */
+	char    user[SIZSTR];   /* name of user */
+	short   incno;          /* dump level (or BYNAME) */
+};
+----
+
 .disk11.img
 [source]
 ----
@@ -215,3 +234,17 @@ If we look at the header if disk11.img, you'll see this:
 
 And the volume is 38592 words or 308736 bytes long (0x4B600), which corresponds to the hexdump line above where the zeros start.
 The volume header tells you how much data is valid (which happens to be weirly less than the floppy length, maybe so if it were a file, it would fit on a freshly formatted 320k floppy).
+
+We also know this is a `BYNAME` dump since the `incno` is 100 which is the `BYNAME` define.
+disks 2-6 are in the `BYINDE` mode.
+These correspond to the "inode dump" and "name dump" comments above.
+
+We also know the date these disks were made:
+
+[source]
+----
+env TZ=UTC date -r 446594393
+Sat Feb 25 21:59:53 UTC 1984
+----
+
+We also know that volnum starts at 1 since the above dump is from disk11 which is the 2nd programming disk.
