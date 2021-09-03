@@ -171,44 +171,7 @@ struct fs_volume {
 };
 ----
 
-.disk11.img
-[source]
-----
-0004b590  20 20 20 2f 2a 20 63 75  72 72 65 6e 74 20 64 69  |   /* current di|
-0004b5a0  72 65 63 74 6f 72 79 20  65 6e 74 72 79 20 2a 2f  |rectory entry */|
-0004b5b0  0a 09 73 74 72 75 63 74  20 69 6e 6f 64 65 20 2a  |..struct inode *|
-0004b5c0  75 5f 70 64 69 72 3b 20  20 20 2f 2a 20 69 6e 6f  |u_pdir;   /* ino|
-0004b5d0  64 65 20 6f 66 20 70 61  72 65 6e 74 20 64 69 72  |de of parent dir|
-0004b5e0  65 63 74 6f 72 79 20 6f  66 20 64 69 72 70 20 2a  |ectory of dirp *|
-0004b5f0  2f 0a 09 73 74 72 75 63  74 20 66 69 6c 65 20 2a  |/..struct file *|
-0004b600  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
-*
-0005a000
-----
-
-.disk12.img
-[source]
-----
-00000000  09 00 6b ea 9e f3 03 00  59 7d 9e 1a 59 7d 9e 1a  |..k.....Y}..Y}..|
-00000010  c0 96 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
-00000020  00 00 00 00 75 6e 6b 6e  6f 77 6e 00 00 00 00 00  |....unknown.....|
-00000030  00 00 00 00 72 6f 6f 74  00 00 00 00 00 00 00 00  |....root........|
-00000040  00 00 00 00 64 00 00 00  75 5f 6f 66 69 6c 65 5b  |....d...u_ofile[|
-00000050  4e 4f 46 49 4c 45 5d 3b  20 2f 2a 20 70 6f 69 6e  |NOFILE]; /* poin|
-00000060  74 65 72 73 20 74 6f 20  66 69 6c 65 20 73 74 72  |ters to file str|
-00000070  75 63 74 73 20 6f 66 20  6f 70 65 6e 20 66 69 6c  |ucts of open fil|
-00000080  65 73 20 2a 2f 0a 09 63  68 61 72 20 75 5f 70 6f  |es */..char u_po|
-00000090  66 69 6c 65 5b 4e 4f 46  49 4c 45 5d 3b 20 20 2f  |file[NOFILE];  /|
-----
-
-
-If you examine the text part of disk11.img and the first part of disk12.img, you'll see proc.h spans the end of one and the start of the next.
-However, you'll also see there's a bunch of NULs after the text on disk11.img.
-So all the lengths in this file are specified in 'dword' which is 8 bytes long.
-So, the volume header above is 9 * 8 = 72 bytes long.
-You'll also see that there's 72 bytes of header before the text file cotninues where it left off on disk11.img.
-The first 09 in disk12.img says the header is 72 bytes long.
-The end of disk11.img takes a little more digging.
+The end of disk11.img takes a little digging.
 If we look at the header if disk11.img, you'll see this:
 
 .disk11.img headers
@@ -248,3 +211,53 @@ Sat Feb 25 21:59:53 UTC 1984
 ----
 
 We also know that volnum starts at 1 since the above dump is from disk11 which is the 2nd programming disk.
+
+So, what happens at the end of the volumes? Let's take a look and see if we can guess:
+
+.disk11.img
+[source]
+----
+0004b590  20 20 20 2f 2a 20 63 75  72 72 65 6e 74 20 64 69  |   /* current di|
+0004b5a0  72 65 63 74 6f 72 79 20  65 6e 74 72 79 20 2a 2f  |rectory entry */|
+0004b5b0  0a 09 73 74 72 75 63 74  20 69 6e 6f 64 65 20 2a  |..struct inode *|
+0004b5c0  75 5f 70 64 69 72 3b 20  20 20 2f 2a 20 69 6e 6f  |u_pdir;   /* ino|
+0004b5d0  64 65 20 6f 66 20 70 61  72 65 6e 74 20 64 69 72  |de of parent dir|
+0004b5e0  65 63 74 6f 72 79 20 6f  66 20 64 69 72 70 20 2a  |ectory of dirp *|
+0004b5f0  2f 0a 09 73 74 72 75 63  74 20 66 69 6c 65 20 2a  |/..struct file *|
+0004b600  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+0005a000
+----
+
+.disk12.img
+[source]
+----
+00000000  09 00 6b ea 9e f3 03 00  59 7d 9e 1a 59 7d 9e 1a  |..k.....Y}..Y}..|
+00000010  c0 96 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000020  00 00 00 00 75 6e 6b 6e  6f 77 6e 00 00 00 00 00  |....unknown.....|
+00000030  00 00 00 00 72 6f 6f 74  00 00 00 00 00 00 00 00  |....root........|
+00000040  00 00 00 00 64 00 00 00  75 5f 6f 66 69 6c 65 5b  |....d...u_ofile[|
+00000050  4e 4f 46 49 4c 45 5d 3b  20 2f 2a 20 70 6f 69 6e  |NOFILE]; /* poin|
+00000060  74 65 72 73 20 74 6f 20  66 69 6c 65 20 73 74 72  |ters to file str|
+00000070  75 63 74 73 20 6f 66 20  6f 70 65 6e 20 66 69 6c  |ucts of open fil|
+00000080  65 73 20 2a 2f 0a 09 63  68 61 72 20 75 5f 70 6f  |es */..char u_po|
+00000090  66 69 6c 65 5b 4e 4f 46  49 4c 45 5d 3b 20 20 2f  |file[NOFILE];  /|
+----
+
+
+If you examine the text part of disk11.img and the first part of disk12.img, you'll see proc.h spans the end of one and the start of the next.
+However, you'll also see there's a bunch of NULs after the text on disk11.img.
+So all the lengths in this file are specified in 'dword' which is 8 bytes long.
+So, the volume header above is 9 * 8 = 72 bytes long.
+You'll also see that there's 72 bytes of header before the text file cotninues where it left off on disk11.img.
+The first 09 in disk12.img says the header is 72 bytes long.
+If we joint together the bytes leading up to 0x4b5ff on disk11.img with the bytes from 0x48 on disk12.mimg we see that they match well:
+
+.Files at the edge
+[soruce,C]
+----
+	struct inode *u_pdir;	/* inode of parent directory of dirp */
+	struct file *u_ofile[NOFILE]; /* pointers to fiel structs of open files */
+----
+
+which leads me to believe that we should extract the filesize bytes from a stream that's created by jointing together all the volumes and omitting the VOLUME header at the front.
